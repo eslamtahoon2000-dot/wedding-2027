@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>دعوة زفاف وتأكيد الحضور</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      color: #fff;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* فيديو الخلفية */
+    #bg-video {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      z-index: -2;
+      object-fit: cover;
+    }
+
+    /* طبقة تظليل خفيفة */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      z-index: -1;
+    }
+
+    /* شاشة فتح الدعوة */
+    #welcome-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+
+    .open-btn {
+      background: rgba(243, 214, 135, 0.25);
+      color: #f3d687;
+      border: 2px solid #f3d687;
+      padding: 15px 40px;
+      font-size: 20px;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+      transition: all 0.3s ease;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    .open-btn:hover {
+      background: #f3d687;
+      color: #333;
+      transform: scale(1.05);
+    }
+
+    /* كارت الدعوة الشفاف */
+    .card {
+      background: rgba(0, 0, 0, 0.25);
+      max-width: 480px;
+      width: 100%;
+      padding: 30px 25px;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      text-align: center;
+      color: #ffffff;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px);
+      transition: all 0.8s ease;
+      margin: 20px 0;
+    }
+
+    .card.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    
+    h1 { color: #f3d687; margin-top: 5px; margin-bottom: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
+    h2 { color: #ffffff; margin: 15px 0; font-size: 26px; text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
+    h3 { color: #f3d687; margin-bottom: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+
+    .quran-container { margin: 0 auto 15px auto; padding: 10px 5px; text-align: center; }
+    .basmala { font-size: 19px; color: #f3d687; font-weight: bold; margin-bottom: 10px; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+    .quran-ayah { font-size: 15px; color: #ffffff; font-weight: bold; line-height: 1.8; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+    
+    .intro-text { font-size: 15px; line-height: 1.7; margin: 15px 0; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+    .event-details { margin: 15px 0; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(243, 214, 135, 0.2); }
+    .event-details p { margin: 6px 0; font-size: 15px; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+    .inviter-text { color: #f3d687; font-weight: bold; margin-top: 15px; font-size: 16px; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+
+    /* ألبوم الصور */
+    .gallery-container {
+      position: relative;
+      max-width: 100%;
+      margin: 20px 0;
+      border-radius: 15px;
+      overflow: hidden;
+      border: 1px solid rgba(243, 214, 135, 0.5);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+
+    .gallery-slide {
+      display: none;
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      border-radius: 15px;
+    }
+
+    .gallery-slide.active { display: block; }
+
+    .prev-btn, .next-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.5);
+      color: #f3d687;
+      border: none;
+      padding: 8px 14px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: 0.3s;
+      user-select: none;
+    }
+    .prev-btn { right: 10px; }
+    .next-btn { left: 10px; }
+    .prev-btn:hover, .next-btn:hover { background: rgba(243, 214, 135, 0.8); color: #333; }
+    
+    .timer { display: flex; justify-content: center; gap: 8px; margin: 20px 0; }
+    .timer-box { background: rgba(0, 0, 0, 0.25); color: #fff; padding: 10px; border-radius: 8px; min-width: 55px; border: 1px solid rgba(243, 214, 135, 0.4); }
+    .timer-box span { display: block; font-size: 18px; font-weight: bold; color: #f3d687; }
+
+    .map-btn { display: inline-block; background-color: #25D366; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 10px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+    .qr-container { margin: 20px auto; display: flex; justify-content: center; background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 10px; width: fit-content; }
+    
+    form { margin-top: 25px; text-align: right; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; color: #f3d687; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+    input, select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; box-sizing: border-box; background: rgba(255, 255, 255, 0.85); color: #333; }
+    button[type="submit"] { width: 100%; background: #f3d687; color: #333; border: none; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    button[type="submit"]:hover { background: #d4b35f; }
+  </style>
+</head>
+<body>
+
+  <!-- فيديو الخلفية -->
+  <video loop playsinline id="bg-video">
+    <source src="wedding.mp4" type="video/mp4">
+  </video>
+  
+  <div class="overlay"></div>
+
+  <!-- الشاشة الأولى -->
+  <div id="welcome-screen">
+    <button class="open-btn" onclick="openInvitation()">✨ فتح الدعوة ✨</button>
+  </div>
+
+  <!-- كارت الدعوة -->
+  <div class="card" id="invitation-card">
+    <h1>دعوة زفاف</h1>
+
+    <div class="quran-container">
+      <div class="basmala">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
+      <div class="quran-ayah">
+        "وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً"
+      </div>
+    </div>
+
+    <p class="intro-text">بقلوب مليئة بالفرح والسرور، يترقب أدمعنا لقاءكم ويشرفنا حضوركم حفل زفاف ابننا/ابنتنا:</p>
+
+    <h2>[ اسلام ] & [ بدر ]</h2>
+    
+    <div class="event-details">
+      <p><strong>التاريخ:</strong> [الجمعه] | الموافق [12/3/2027]</p>
+      <p><strong>الوقت:</strong> في تمام الساعة [ 8 ] مساءً</p>
+      <p><strong>المكان:</strong> قاعة موناليزا، الجامعه، المنصورة</p>
+    </div>
+
+    <p class="intro-text">حضوركم يكتمل به فرحنا وتشرق به ليلتنا الكبرى.</p>
+    <p class="inviter-text">الداعون: [عائلة طاحون / عائلة البديني]</p>
+    
+    <!-- قسم ألبوم الصور -->
+    <h3 style="margin-top: 25px;">ألبوم الصور</h3>
+    <div class="gallery-container">
+      <img class="gallery-slide active" src="photo1.jpg" alt="صورة 1">
+      <img class="gallery-slide" src="photo2.jpg" alt="صورة 2">
+      <img class="gallery-slide" src="photo3.jpg" alt="صورة 3">
+      <img class="gallery-slide" src="photo4.jpg" alt="صورة 4">
+
+      <button class="prev-btn" onclick="changeSlide(1)">&#10095;</button>
+      <button class="next-btn" onclick="changeSlide(-1)">&#10094;</button>
+    </div>
+
+    <!-- زر الموقع ينقلك لقاعة موناليزا مباشرة -->
+    <a href="https://maps.google.com/?q=28VV%2BRPQ%20Monalisa%20Hall%20Mansoura" target="_blank" class="map-btn">📍 موقع الحفل (قاعة موناليزا) على الخريطة</a>
+
+    <!-- العداد التنازلي -->
+    <div class="timer">
+      <div class="timer-box"><span id="days">0</span>يوم</div>
+      <div class="timer-box"><span id="hours">0</span>ساعة</div>
+      <div class="timer-box"><span id="minutes">0</span>دقيقة</div>
+      <div class="timer-box"><span id="seconds">0</span>ثانية</div>
+    </div>
+
+    <div class="qr-container" id="qrcode"></div>
+
+    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
+
+    <!-- نموذج الحضور -->
+    <h3>تأكيد الحضور (RSVP)</h3>
+    <form id="rsvpForm">
+      <label for="name">الاسم الكريم:</label>
+      <input type="text" id="name" required placeholder="أدخل اسمك الثلاثي">
+
+      <label for="status">هل ستتمكن من الحضور؟</label>
+      <select id="status" required>
+        <option value="يشرفني الحضور">يشرفني الحضور</option>
+        <option value="أعتذر عن الحضور">أعتذر عن الحضور</option>
+      </select>
+
+      <label for="guests">عدد المرافقين:</label>
+      <input type="number" id="guests" min="0" max="5" value="0">
+
+      <button type="submit">إرسال التأكيد عبر الواتساب</button>
+    </form>
+  </div>
+
+  <script>
+    function openInvitation() {
+      // تشغيل الفيديو بالصوت عند ضغط زر فتح الدعوة
+      const bgVideo = document.getElementById('bg-video');
+      if (bgVideo) {
+        bgVideo.muted = false;
+        bgVideo.currentTime = 0;
+        bgVideo.play().catch(error => {
+          console.log("تعذر التشغيل التلقائي للصوت:", error);
+        });
+      }
+
+      document.getElementById('welcome-screen').style.opacity = '0';
+      document.getElementById('welcome-screen').style.visibility = 'hidden';
+      setTimeout(() => {
+        document.getElementById('invitation-card').classList.add('show');
+      }, 300);
+    }
+
+    // ألبوم الصور
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.gallery-slide');
+
+    function changeSlide(direction) {
+      slides[currentSlide].classList.remove('active');
+      currentSlide = (currentSlide + direction + slides.length) % slides.length;
+      slides[currentSlide].classList.add('active');
+    }
+
+    // 1. رمز QR
+    new QRCode(document.getElementById("qrcode"), {
+      text: window.location.href,
+      width: 120,
+      height: 120
+    });
+
+    // 2. العداد التنازلي
+    const weddingDate = new Date("March 12, 2027 20:00:00").getTime();
+    setInterval(function() {
+      const now = new Date().getTime();
+      const distance = weddingDate - now;
+      if (distance > 0) {
+        document.getElementById("days").innerText = Math.floor(distance / (1000 * 60 * 60 * 24));
+        document.getElementById("hours").innerText = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        document.getElementById("minutes").innerText = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        document.getElementById("seconds").innerText = Math.floor((distance % (1000 * 60)) / 1000);
+      }
+    }, 1000);
+
+    // 3. إرسال التأكيد عبر الواتساب
+    document.getElementById("rsvpForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const phoneNumber = "00201154640435";
+      const name = document.getElementById("name").value;
+      const status = document.getElementById("status").value;
+      const guests = document.getElementById("guests").value;
+      const message = `مرحباً، تم إرسال تأكيد حضور لحفل الزفاف:%0A- *الاسم:* ${name}%0A- *الحالة:* ${status}%0A- *عدد المرافقين:* ${guests}`;
+      window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+    });
+  </script>
+
+</body>
+</html>
